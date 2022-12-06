@@ -32,12 +32,16 @@ The example code will ***split the PDF file File.pdf in segments of 10Kb***
     .\run.ps1 -Divide
 ```
 
-### Re-Comining
+### Re-Combining
 
 
 ```
     .\run.ps1 -Combine
 ```
 
+
+---------------------------------------------------------------------------------------------------------
+
+Demo
 
 ![DEMO](https://raw.githubusercontent.com/arsscriptum/PowerShell.SplittingBinaries/master/doc/demo.gif)
