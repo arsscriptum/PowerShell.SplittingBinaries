@@ -13,7 +13,7 @@ function Invoke-AutoUpdateProgress_FileUtils{
 }
 
    
-function CombineSplitFiles{
+function Invoke-CombineSplitFiles{
 
     [CmdletBinding(SupportsShouldProcess)]
     param(
@@ -75,7 +75,7 @@ function CombineSplitFiles{
 
 
 
-function SplitDataFile{
+function Invoke-SplitDataFile{
     [CmdletBinding(SupportsShouldProcess)]
     param(
         [Parameter(Mandatory = $true)] 
@@ -178,3 +178,100 @@ function SplitDataFile{
 
     $OBJREADER.Close()
 }
+
+
+
+function Split-DataFile{
+
+    [CmdletBinding(SupportsShouldProcess)]
+    param(
+        [Parameter(Position = 0, Mandatory = $true)] 
+        [String]$FilePath,
+        [Parameter(Position = 1, Mandatory = $true)] 
+        [String]$DestinationPath,
+        [Parameter(Mandatory = $false)] 
+        [uint32]$Size=0
+    )
+
+    begin{
+        if(-not(Test-Path -Path "$DestinationPath" -PathType Container)){
+            $Null = New-Item -Path "$DestinationPath" -ItemType Directory -Force -ErrorAction Ignore
+        }
+        $SizeDataFile = Join-Path $DestinationPath 'Size.dat'
+        $HashDataFile = Join-Path $DestinationPath 'Hash.dat'
+
+        Write-Verbose "SizeDataFile `"$SizeDataFile`""
+        Write-Verbose "HashDataFile `"$HashDataFile`""
+        $Hash         = (Get-FileHash $FilePath -Algorithm SHA1).Hash
+        $FileLength   = (gi -Path "$FilePath").Length
+        
+        Write-Verbose "File Hash  $Hash"
+        Write-Verbose "FileLength $FileLength"
+
+        if($Size -eq 0){
+            $Size = $FileLength / 10
+            Write-Verbose "Size not set, using $Size bytes"
+        }
+    }
+    process{
+      try{
+        Set-Content $SizeDataFile -Value $FileLength -Force
+        Set-Content $HashDataFile -Value $Hash -Force
+        invoke-SplitDataFile -Path "$FilePath" -Newsize $Size -OutPath "$DestinationPath" -AsString
+      }catch{
+        Write-Error "$_"
+      }
+    }
+}
+
+
+
+
+function Merge-DataFile{
+
+    [CmdletBinding(SupportsShouldProcess)]
+    param(
+        [Parameter(Position = 0, Mandatory = $true)] 
+        [String]$DataPath,
+        [Parameter(Position = 1, Mandatory = $true)] 
+        [String]$DestinationPath
+    )
+
+    begin{
+        if(Test-Path -Path "$DestinationPath" -PathType Leaf){
+            throw "file `"$DestinationPath`" exists"
+        }
+        $Null = New-Item -Path "$DestinationPath" -ItemType File -Force -ErrorAction Ignore
+        $Null = Remove-Item -Path "$DestinationPath" -Force  -ErrorAction Ignore
+        $SizeDataFile = Join-Path $DataPath 'Size.dat'
+        $HashDataFile = Join-Path $DataPath 'Hash.dat'
+
+        if(-not(Test-Path -Path "$SizeDataFile" -PathType Leaf)){
+            throw "file `"$SizeDataFile`" missing"
+        }
+        if(-not(Test-Path -Path "$HashDataFile" -PathType Leaf)){
+            throw "file `"$HashDataFile`" missing"
+        }
+        Write-Verbose "SizeDataFile `"$SizeDataFile`""
+        Write-Verbose "HashDataFile `"$HashDataFile`""
+
+        [uint32]$FileLength = Get-Content $SizeDataFile 
+        [string]$HashCheck = Get-Content -Path "$HashDataFile" 
+        Write-Verbose "File Hash  $HashCheck"
+        Write-Verbose "FileLength $FileLength"
+
+    }
+    process{
+      try{
+        Invoke-CombineSplitFiles -Path "$DataPath" -OutFilePath "$DestinationPath" -TotalSize $FileLength 
+        $Hash = (Get-FileHash $DestinationPath -Algorithm SHA1).Hash
+        Write-Verbose "Original Hash $HashCheck"
+        Write-Verbose "Combined Hash $Hash"
+        if($Hash -ne $HashCheck){ throw "error" } 
+      }catch{
+        Write-Error "$_"
+      }
+    }
+}
+
+

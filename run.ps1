@@ -28,9 +28,9 @@ try{
     $ScriptFullName =(Get-Item -Path $script:MyInvocation.MyCommand.Path).FullName
     $ScriptsPath = Join-Path $MakeScriptPath 'scripts'
     $PackagePath = Join-Path $MakeScriptPath 'package'
-    $DataPath = Join-Path $MakeScriptPath 'data'
+    $DataPath = "F:\Development\Backup.Importants\CodeMeter_SDK"
     $FileUtilsScriptPath = Join-Path $ScriptsPath 'FileUtils.ps1'
-    $DataFilePath = Join-Path $PackagePath 'File.pdf'
+    $DataFilePath = "E:\Data\CODEMETER_V2\CodeMeter-SDK\Windows\CodeMeterSDK64.exe"
     $CombinedDataFilePath = Join-Path $PackagePath 'Recombined-File.pdf'
     $SizeDataFile = Join-Path $DataPath 'Size.dat'
     . "$FileUtilsScriptPath"
@@ -65,9 +65,9 @@ try{
     elseif($Divide){
         if(-not (Test-Path -Path "$DataFilePath")){ throw "Cannot DIvide: no file $DataFilePath" }
         $FileLength = (gi -Path "$DataFilePath").Length
-        $Newsize = 5MB
+        $Newsize = 35MB
         
-        SplitDataFile -Path $DataFilePath -Newsize 10kb -OutPath $DataPath -AsString 
+        SplitDataFile -Path $DataFilePath -Newsize $Newsize -OutPath $DataPath -AsString 
         Set-Content $SizeDataFile -Value $FileLength
         $Hash = (Get-FileHash $DataFilePath -Algorithm SHA1).Hash
 
